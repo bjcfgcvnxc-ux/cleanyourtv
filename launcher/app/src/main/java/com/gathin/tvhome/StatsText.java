@@ -7,7 +7,9 @@ import java.util.regex.Pattern;
 /** Isolate complete measurements, not individual digits, in the Hebrew stats paragraph. */
 final class StatsText {
     private static final Pattern MEASUREMENT = Pattern.compile("[0-9]+(?:[.,][0-9]+)?(?:\\s*/\\s*[0-9]+(?:[.,][0-9]+)?)?(?:\\s+(?:MB|GB)|%)");
-    static String forLocale(String text, Locale locale) {
+   static String forLocale(String text, Locale locale) {
+       String prayer = PrayerLine.text();
+        if (prayer != null) return prayer;
         String language = locale.getLanguage();
         if (!language.equals("he") && !language.equals("iw")) return text;
         Matcher matcher = MEASUREMENT.matcher(text);
