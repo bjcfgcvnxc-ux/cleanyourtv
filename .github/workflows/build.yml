@@ -1,4 +1,4 @@
-name: Build Launcher and Addon
+name: Build Everything
 
 on: workflow_dispatch
 
@@ -14,31 +14,27 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Show root directory
+        run: ls -la
 
-      # بناء اللانشر (يتعامل مع غياب gradlew)
-      - name: Build CleanYourTV Launcher
+      - name: Find and Build all Gradle projects
         run: |
-          if [ -f "gradlew" ]; then
+          # البحث عن أي ملف gradlew في المستودع
+          find . -name "gradlew" -type f | while read -r file; do
+            dir=$(dirname "$file")
+            echo "=================================================="
+            echo "Building project in: $dir"
+            echo "=================================================="
+            cd "$dir"
             chmod +x gradlew
-            ./gradlew assembleDebug
-          else
-            echo "gradlew not found in root, using system gradle..."
-            gradle assembleDebug
-          fi
+            # محاولة البناء (Debug أو Release)
+            ./gradlew assembleDebug || ./gradlew assembleRelease
+            cd - > /dev/null
+          done
 
-      # بناء الإضافة (تأكدنا من وجود gradlew داخلها)
-      - name: Build Prayer Times Addon
-        working-directory: addons/prayer-times
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
-
-      - name: Upload Artifacts
+      - name: Upload All APKs
         uses: actions/upload-artifact@v4
         with:
-          name: cleanyourtv-bundle
+          name: all-apks
           path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            addons/prayer-times/app/build/outputs/apk/release/app-release.apk
+            **/build/outputs/apk/**/*.apk
