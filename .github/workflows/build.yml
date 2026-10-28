@@ -1,21 +1,43 @@
-name: Build Prayer Times
+name: Build Launcher and Addon
+
 on: workflow_dispatch
+
 jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
-      - name: Accept licenses and install SDK
+          
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        
+      - name: Install SDK 34
+        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+      # 1. بناء اللانشر الأساسي (CleanYourTV)
+      - name: Build CleanYourTV Launcher
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0"
-      - run: chmod +x gradlew && ./gradlew assembleRelease
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      # 2. بناء الإضافة (Prayer Times)
+      - name: Build Prayer Times Addon
         working-directory: addons/prayer-times
-      - uses: actions/upload-artifact@v4
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # 3. رفع الملفين معاً
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
         with:
-          name: prayer-times-apk
-          path: addons/prayer-times/app/build/outputs/apk/release/app-release.apk
+          name: cleanyourtv-full-bundle
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            addons/prayer-times/app/build/outputs/apk/release/app-release.apk
